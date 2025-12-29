@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Docker Registry GUI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #0db7ed 0%, #384d54 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #0db7ed 0%, #00d4aa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .registry-input {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .registry-input input {
+            flex: 1;
+            min-width: 300px;
+            padding: 12px 16px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .registry-input input:focus {
+            outline: none;
+            border-color: #0db7ed;
+            box-shadow: 0 0 20px rgba(13, 183, 237, 0.2);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0db7ed 0%, #0099cc 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(13, 183, 237, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(231, 76, 60, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e0e0e0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 16px;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.connected {
+            background: #00d4aa;
+        }
+
+        .status-indicator.disconnected {
+            background: #e74c3c;
+        }
+
+        .status-indicator.loading {
+            background: #f39c12;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 16px 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-header h2 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .panel-body {
+            padding: 16px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .repo-list {
+            list-style: none;
+        }
+
+        .repo-item {
+            padding: 14px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .repo-item:hover {
+            background: rgba(13, 183, 237, 0.15);
+            transform: translateX(4px);
+        }
+
+        .repo-item.active {
+            background: rgba(13, 183, 237, 0.25);
+            border: 1px solid rgba(13, 183, 237, 0.5);
+        }
+
+        .repo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #384d54 0%, #0db7ed 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .repo-info {
+            flex: 1;
+        }
+
+        .repo-name {
+            font-weight: 500;
+            color: #fff;
+            margin-bottom: 2px;
+        }
+
+        .repo-meta {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .tags-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .tag-card {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .tag-card:hover {
+            border-color: rgba(13, 183, 237, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .tag-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .tag-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0db7ed;
+            word-break: break-all;
+        }
+
+        .tag-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .tag-actions button {
+            padding: 6px 10px;
+            font-size: 12px;
+        }
+
+        .tag-details {
+            font-size: 13px;
+            color: #888;
+        }
+
+        .tag-details p {
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .tag-details .label {
+            color: #666;
+        }
+
+        .tag-details .value {
+            color: #aaa;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 11px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state .icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: #888;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(13, 183, 237, 0.2);
+            border-top-color: #0db7ed;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: #1a1a2e;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transform: scale(0.9);
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal h3 {
+            margin-bottom: 16px;
+            color: #fff;
+        }
+
+        .modal p {
+            margin-bottom: 20px;
+            color: #aaa;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 16px 24px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 500;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1001;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            background: linear-gradient(135deg, #00d4aa 0%, #00a085 100%);
+        }
+
+        .toast.error {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+
+        .search-box {
+            margin-bottom: 16px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            font-size: 14px;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #0db7ed;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-count {
+            background: rgba(13, 183, 237, 0.2);
+            color: #0db7ed;
+        }
+
+        .copy-btn {
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            color: #0db7ed;
+            background: rgba(13, 183, 237, 0.1);
+        }
+
+        .pull-command {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            color: #00d4aa;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 12px;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div class="logo">🐳</div>
+                <h1>Docker Registry GUI</h1>
+            </div>
+            <div class="registry-input">
+                <input type="text" id="registryUrl" placeholder="Enter registry URL (e.g., http://localhost:5000)" value="http://localhost:5000">
+                <button class="btn btn-primary" onclick="connectRegistry()">
+                    <span>🔗</span> Connect
+                </button>
+            </div>
+            <div class="status-bar">
+                <div class="status-indicator disconnected" id="statusIndicator"></div>
+                <span id="statusText">Not connected</span>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>📦 Repositories</h2>
+                    <span class="badge badge-count" id="repoCount">0</span>
+                </div>
+                <div class="panel-body">
+                    <div class="search-box">
+                        <input type="text" id="repoSearch" placeholder="Search repositories..." oninput="filterRepos()">
+                    </div>
+                    <ul class="repo-list" id="repoList">
+                        <div class="empty-state">
+                            <div class="icon">📦</div>
+                            <h3>No repositories</h3>
+                            <p>Connect to a registry to see repositories</p>
+                        </div>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>🏷️ Tags</h2>
+                    <span id="selectedRepo" style="color: #0db7ed; font-size: 14px;"></span>
+                </div>
+                <div class="panel-body">
+                    <div class="tags-grid" id="tagsGrid">
+                        <div class="empty-state">
+                            <div class="icon">🏷️</div>
+                            <h3>Select a repository</h3>
+                            <p>Click on a repository to view its tags</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal">
+            <h3>⚠️ Confirm Delete</h3>
+            <p id="deleteMessage">Are you sure you want to delete this image tag?</p>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+                <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        let currentRegistry = '';
+        let repositories = [];
+        let currentRepo = '';
+        let deleteTarget = null;
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function setStatus(status, text) {
+            const indicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+            indicator.className = `status-indicator ${status}`;
+            statusText.textContent = text;
+        }
+
+        async function connectRegistry() {
+            const url = document.getElementById('registryUrl').value.trim();
+            if (!url) {
+                showToast('Please enter a registry URL', 'error');
+                return;
+            }
+
+            currentRegistry = url;
+            setStatus('loading', 'Connecting...');
+
+            try {
+                const response = await fetch(`/api/health?registry_url=${encodeURIComponent(url)}`);
+                const data = await response.json();
+
+                if (data.status === 'ok') {
+                    setStatus('connected', `Connected to ${url}`);
+                    showToast('Connected successfully!');
+                    loadRepositories();
+                } else {
+                    setStatus('disconnected', 'Connection failed');
+                    showToast(data.error || 'Failed to connect', 'error');
+                }
+            } catch (error) {
+                setStatus('disconnected', 'Connection failed');
+                showToast('Failed to connect to registry', 'error');
+            }
+        }
+
+        async function loadRepositories() {
+            const repoList = document.getElementById('repoList');
+            repoList.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+            try {
+                const response = await fetch(`/api/catalog?registry_url=${encodeURIComponent(currentRegistry)}`);
+                const data = await response.json();
+
+                if (data.repositories) {
+                    repositories = data.repositories;
+                    document.getElementById('repoCount').textContent = repositories.length;
+                    renderRepositories(repositories);
+                } else {
+                    repoList.innerHTML = `
+                        <div class="empty-state">
+                            <div class="icon">📦</div>
+                            <h3>No repositories found</h3>
+                            <p>${data.error || 'The registry is empty'}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                repoList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">❌</div>
+                        <h3>Error loading repositories</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderRepositories(repos) {
+            const repoList = document.getElementById('repoList');
+            
+            if (repos.length === 0) {
+                repoList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">🔍</div>
+                        <h3>No matches found</h3>
+                        <p>Try a different search term</p>
+                    </div>
+                `;
+                return;
+            }
+
+            repoList.innerHTML = repos.map(repo => `
+                <li class="repo-item ${repo === currentRepo ? 'active' : ''}" onclick="selectRepo('${repo}')">
+                    <div class="repo-icon">📦</div>
+                    <div class="repo-info">
+                        <div class="repo-name">${repo}</div>
+                        <div class="repo-meta">Click to view tags</div>
+                    </div>
+                </li>
+            `).join('');
+        }
+
+        function filterRepos() {
+            const search = document.getElementById('repoSearch').value.toLowerCase();
+            const filtered = repositories.filter(repo => repo.toLowerCase().includes(search));
+            renderRepositories(filtered);
+        }
+
+        async function selectRepo(repo) {
+            currentRepo = repo;
+            document.getElementById('selectedRepo').textContent = repo;
+            
+            // Update active state
+            document.querySelectorAll('.repo-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.querySelector('.repo-name').textContent === repo) {
+                    item.classList.add('active');
+                }
+            });
+
+            const tagsGrid = document.getElementById('tagsGrid');
+            tagsGrid.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+            try {
+                const response = await fetch(`/api/repositories/${encodeURIComponent(repo)}/tags?registry_url=${encodeURIComponent(currentRegistry)}`);
+                const data = await response.json();
+
+                if (data.tags && data.tags.length > 0) {
+                    renderTags(repo, data.tags);
+                } else {
+                    tagsGrid.innerHTML = `
+                        <div class="empty-state">
+                            <div class="icon">🏷️</div>
+                            <h3>No tags found</h3>
+                            <p>This repository has no tags</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                tagsGrid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">❌</div>
+                        <h3>Error loading tags</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function renderTags(repo, tags) {
+            const tagsGrid = document.getElementById('tagsGrid');
+            
+            const tagCards = await Promise.all(tags.map(async tag => {
+                let details = '';
+                try {
+                    const response = await fetch(`/api/repositories/${encodeURIComponent(repo)}/manifests/${encodeURIComponent(tag)}?registry_url=${encodeURIComponent(currentRegistry)}`);
+                    const manifest = await response.json();
+                    
+                    if (manifest.config) {
+                        const size = manifest.layers ? manifest.layers.reduce((acc, l) => acc + (l.size || 0), 0) : 0;
+                        const sizeStr = formatSize(size);
+                        const digest = manifest.digest ? manifest.digest.substring(0, 19) + '...' : 'N/A';
+                        
+                        details = `
+                            <div class="tag-details">
+                                <p><span class="label">Size:</span> <span class="value">${sizeStr}</span></p>
+                                <p><span class="label">Layers:</span> <span class="value">${manifest.layers ? manifest.layers.length : 'N/A'}</span></p>
+                                <p><span class="label">Digest:</span> <span class="value">${digest}</span></p>
+                            </div>
+                        `;
+                    }
+                } catch (e) {
+                    details = '<div class="tag-details"><p>Could not load details</p></div>';
+                }
+
+                const registryHost = currentRegistry.replace(/^https?:\/\//, '');
+                const pullCmd = `docker pull ${registryHost}/${repo}:${tag}`;
+
+                return `
+                    <div class="tag-card">
+                        <div class="tag-header">
+                            <span class="tag-name">${tag}</span>
+                            <div class="tag-actions">
+                                <button class="btn btn-danger" onclick="showDeleteModal('${repo}', '${tag}')" title="Delete">🗑️</button>
+                            </div>
+                        </div>
+                        ${details}
+                        <div class="pull-command">
+                            <span>${pullCmd}</span>
+                            <button class="copy-btn" onclick="copyToClipboard('${pullCmd}')" title="Copy">📋</button>
+                        </div>
+                    </div>
+                `;
+            }));
+
+            tagsGrid.innerHTML = tagCards.join('');
+        }
+
+        function formatSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Copied to clipboard!');
+            }).catch(() => {
+                showToast('Failed to copy', 'error');
+            });
+        }
+
+        function showDeleteModal(repo, tag) {
+            deleteTarget = { repo, tag };
+            document.getElementById('deleteMessage').textContent = 
+                `Are you sure you want to delete ${repo}:${tag}? This action cannot be undone.`;
+            document.getElementById('deleteModal').classList.add('active');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.remove('active');
+            deleteTarget = null;
+        }
+
+        async function confirmDelete() {
+            if (!deleteTarget) return;
+
+            const { repo, tag } = deleteTarget;
+            closeDeleteModal();
+
+            try {
+                const response = await fetch(
+                    `/api/repositories/${encodeURIComponent(repo)}/manifests/${encodeURIComponent(tag)}?registry_url=${encodeURIComponent(currentRegistry)}`,
+                    { method: 'DELETE' }
+                );
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast(`Deleted ${repo}:${tag}`);
+                    selectRepo(repo); // Refresh tags
+                } else {
+                    showToast(data.error || 'Delete failed', 'error');
+                }
+            } catch (error) {
+                showToast('Delete failed: ' + error.message, 'error');
+            }
+        }
+
+        // Handle Enter key in registry URL input
+        document.getElementById('registryUrl').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') connectRegistry();
+        });
+    </script>
+</body>
+</html>
