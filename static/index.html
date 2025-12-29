@@ -33,11 +33,39 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
         .header-content {
             display: flex;
             align-items: center;
             gap: 16px;
-            margin-bottom: 20px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(0, 212, 170, 0.1);
+            border: 1px solid rgba(0, 212, 170, 0.3);
+            border-radius: 20px;
+            font-size: 14px;
+            color: #00d4aa;
+        }
+
+        .user-badge .icon {
+            font-size: 16px;
         }
 
         .logo {
@@ -125,6 +153,21 @@
 
         .btn-secondary:hover {
             background: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 13px;
+        }
+
+        .btn-logout {
+            background: rgba(231, 76, 60, 0.1);
+            border: 1px solid rgba(231, 76, 60, 0.3);
+            color: #e74c3c;
+        }
+
+        .btn-logout:hover {
+            background: rgba(231, 76, 60, 0.2);
         }
 
         .status-bar {
@@ -504,9 +547,20 @@
 <body>
     <div class="container">
         <header>
-            <div class="header-content">
-                <div class="logo">🐳</div>
-                <h1>Docker Registry GUI</h1>
+            <div class="header-top">
+                <div class="header-content">
+                    <div class="logo">🐳</div>
+                    <h1>Docker Registry GUI</h1>
+                </div>
+                <div class="user-info">
+                    <div class="user-badge">
+                        <span class="icon">🔐</span>
+                        <span id="currentUser">Loading...</span>
+                    </div>
+                    <button class="btn btn-sm btn-logout" onclick="logout()">
+                        <span>🚪</span> Logout
+                    </button>
+                </div>
             </div>
             <div class="registry-input">
                 <input type="text" id="registryUrl" placeholder="Enter registry URL (e.g., http://localhost:5000)" value="http://localhost:5000">
@@ -576,6 +630,56 @@
         let repositories = [];
         let currentRepo = '';
         let deleteTarget = null;
+        let authToken = '';
+
+        // Check authentication on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+        });
+
+        async function checkAuth() {
+            authToken = localStorage.getItem('auth_token');
+            if (!authToken) {
+                window.location.href = '/login';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/verify-token', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+
+                if (!data.valid || !data.is_2fa_verified) {
+                    localStorage.removeItem('auth_token');
+                    window.location.href = '/login';
+                    return;
+                }
+
+                document.getElementById('currentUser').textContent = data.username;
+            } catch (error) {
+                localStorage.removeItem('auth_token');
+                window.location.href = '/login';
+            }
+        }
+
+        function getAuthHeaders() {
+            return {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            };
+        }
+
+        async function logout() {
+            try {
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: getAuthHeaders()
+                });
+            } catch (e) {}
+            localStorage.removeItem('auth_token');
+            window.location.href = '/login';
+        }
 
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
@@ -602,7 +706,15 @@
             setStatus('loading', 'Connecting...');
 
             try {
-                const response = await fetch(`/api/health?registry_url=${encodeURIComponent(url)}`);
+                const response = await fetch(`/api/health?registry_url=${encodeURIComponent(url)}`, {
+                    headers: getAuthHeaders()
+                });
+                
+                if (response.status === 401 || response.status === 403) {
+                    logout();
+                    return;
+                }
+                
                 const data = await response.json();
 
                 if (data.status === 'ok') {
@@ -624,7 +736,15 @@
             repoList.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
 
             try {
-                const response = await fetch(`/api/catalog?registry_url=${encodeURIComponent(currentRegistry)}`);
+                const response = await fetch(`/api/catalog?registry_url=${encodeURIComponent(currentRegistry)}`, {
+                    headers: getAuthHeaders()
+                });
+                
+                if (response.status === 401 || response.status === 403) {
+                    logout();
+                    return;
+                }
+                
                 const data = await response.json();
 
                 if (data.repositories) {
@@ -698,7 +818,15 @@
             tagsGrid.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
 
             try {
-                const response = await fetch(`/api/repositories/${encodeURIComponent(repo)}/tags?registry_url=${encodeURIComponent(currentRegistry)}`);
+                const response = await fetch(`/api/repositories/${encodeURIComponent(repo)}/tags?registry_url=${encodeURIComponent(currentRegistry)}`, {
+                    headers: getAuthHeaders()
+                });
+                
+                if (response.status === 401 || response.status === 403) {
+                    logout();
+                    return;
+                }
+                
                 const data = await response.json();
 
                 if (data.tags && data.tags.length > 0) {
@@ -729,7 +857,9 @@
             const tagCards = await Promise.all(tags.map(async tag => {
                 let details = '';
                 try {
-                    const response = await fetch(`/api/repositories/${encodeURIComponent(repo)}/manifests/${encodeURIComponent(tag)}?registry_url=${encodeURIComponent(currentRegistry)}`);
+                    const response = await fetch(`/api/repositories/${encodeURIComponent(repo)}/manifests/${encodeURIComponent(tag)}?registry_url=${encodeURIComponent(currentRegistry)}`, {
+                        headers: getAuthHeaders()
+                    });
                     const manifest = await response.json();
                     
                     if (manifest.config) {
@@ -809,8 +939,17 @@
             try {
                 const response = await fetch(
                     `/api/repositories/${encodeURIComponent(repo)}/manifests/${encodeURIComponent(tag)}?registry_url=${encodeURIComponent(currentRegistry)}`,
-                    { method: 'DELETE' }
+                    { 
+                        method: 'DELETE',
+                        headers: getAuthHeaders()
+                    }
                 );
+                
+                if (response.status === 401 || response.status === 403) {
+                    logout();
+                    return;
+                }
+                
                 const data = await response.json();
 
                 if (data.success) {
