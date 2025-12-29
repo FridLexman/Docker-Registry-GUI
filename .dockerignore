@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.browser_screenshots/
+.env
+.venv/
+.vscode/
+users.json
+.git

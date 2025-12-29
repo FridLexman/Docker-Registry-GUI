@@ -17,6 +17,11 @@ CORS(app, supports_credentials=True)
 
 REGISTRY_URL = os.environ.get('REGISTRY_URL', 'http://localhost:5000')
 
+try:
+    setup_initial_admin()
+except Exception as exc:
+    app.logger.error(f"Failed to ensure initial admin user: {exc}")
+
 def get_registry_url():
     return request.args.get('registry_url', REGISTRY_URL).rstrip('/')
 

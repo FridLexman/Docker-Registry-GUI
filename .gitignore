@@ -1,0 +1,17 @@
+# Bytecode / cache
+__pycache__/
+*.pyc
+
+# Local state
+.env
+.venv/
+.vscode/
+.DS_Store
+
+# App data and artifacts
+users.json
+.browser_screenshots/
+
+# Dependencies / tooling
+node_modules/
+
