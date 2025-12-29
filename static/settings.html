@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Docker Registry GUI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #0db7ed 0%, #384d54 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #0db7ed 0%, #00d4aa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(0, 212, 170, 0.1);
+            border: 1px solid rgba(0, 212, 170, 0.3);
+            border-radius: 20px;
+            font-size: 14px;
+            color: #00d4aa;
+        }
+
+        .admin-badge {
+            background: rgba(231, 76, 60, 0.1);
+            border-color: rgba(231, 76, 60, 0.3);
+            color: #e74c3c;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0db7ed 0%, #0099cc 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(13, 183, 237, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e0e0e0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(231, 76, 60, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #00d4aa 0%, #00b894 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 212, 170, 0.3);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tab {
+            padding: 12px 24px;
+            border: none;
+            background: transparent;
+            color: #888;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .tab:hover {
+            color: #e0e0e0;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #0db7ed 0%, #0099cc 100%);
+            color: white;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: none;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .panel-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #aaa;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #0db7ed;
+            box-shadow: 0 0 20px rgba(13, 183, 237, 0.2);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #0db7ed;
+        }
+
+        .checkbox-group label {
+            margin: 0;
+            color: #e0e0e0;
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .users-table th,
+        .users-table td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .users-table th {
+            color: #888;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .users-table tr:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-badge.admin {
+            background: rgba(231, 76, 60, 0.1);
+            color: #e74c3c;
+        }
+
+        .status-badge.user {
+            background: rgba(13, 183, 237, 0.1);
+            color: #0db7ed;
+        }
+
+        .status-badge.enabled {
+            background: rgba(0, 212, 170, 0.1);
+            color: #00d4aa;
+        }
+
+        .status-badge.disabled {
+            background: rgba(255, 193, 7, 0.1);
+            color: #ffc107;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 12px;
+            background: rgba(0, 212, 170, 0.9);
+            color: white;
+            font-weight: 500;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.error {
+            background: rgba(231, 76, 60, 0.9);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .modal-close:hover {
+            color: #e0e0e0;
+        }
+
+        .modal-body {
+            margin-bottom: 24px;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .credentials-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 16px;
+        }
+
+        .credentials-box h4 {
+            color: #00d4aa;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .credentials-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .credentials-item:last-child {
+            border-bottom: none;
+        }
+
+        .credentials-label {
+            color: #888;
+            font-size: 13px;
+        }
+
+        .credentials-value {
+            font-family: monospace;
+            color: #0db7ed;
+            font-size: 13px;
+            word-break: break-all;
+        }
+
+        .backup-codes {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .backup-code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 13px;
+            color: #ffc107;
+            text-align: center;
+        }
+
+        .warning-text {
+            color: #ffc107;
+            font-size: 13px;
+            margin-top: 12px;
+            padding: 12px;
+            background: rgba(255, 193, 7, 0.1);
+            border-radius: 8px;
+            border-left: 3px solid #ffc107;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+
+        .empty-state .icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
+
+            .users-table {
+                font-size: 13px;
+            }
+
+            .users-table th,
+            .users-table td {
+                padding: 10px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-left">
+                <div class="logo">⚙️</div>
+                <h1>Settings</h1>
+            </div>
+            <div class="header-right">
+                <div class="user-badge" id="userBadge">
+                    <span>🔐</span>
+                    <span id="currentUser">Loading...</span>
+                </div>
+                <a href="/" class="btn btn-secondary">
+                    <span>🏠</span> Back to Registry
+                </a>
+            </div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('profile')">👤 Profile</button>
+            <button class="tab" onclick="showTab('registry')">🐳 Registry</button>
+            <button class="tab" onclick="showTab('security')">🔒 Security</button>
+            <button class="tab" onclick="showTab('users')" id="usersTab" style="display: none;">👥 User Management</button>
+        </div>
+
+        <!-- Profile Tab -->
+        <div class="panel active" id="profilePanel">
+            <div class="panel-header">
+                <h2 class="panel-title">👤 Profile Settings</h2>
+            </div>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="profileUsername" disabled>
+            </div>
+            <div class="form-group">
+                <label>Account Type</label>
+                <input type="text" id="profileRole" disabled>
+            </div>
+            <div class="form-group">
+                <label>Account Created</label>
+                <input type="text" id="profileCreated" disabled>
+            </div>
+            <div class="form-group">
+                <label>Last Login</label>
+                <input type="text" id="profileLastLogin" disabled>
+            </div>
+        </div>
+
+        <!-- Registry Tab -->
+        <div class="panel" id="registryPanel">
+            <div class="panel-header">
+                <h2 class="panel-title">🐳 Registry Settings</h2>
+            </div>
+            <div class="form-group">
+                <label>Default Registry URL</label>
+                <input type="text" id="registryUrl" placeholder="http://localhost:5000" value="">
+            </div>
+            <p style="color: #888; font-size: 13px; margin-bottom: 20px;">
+                This is the default Docker registry URL that will be used when browsing images.
+                You can change this at any time.
+            </p>
+            <button class="btn btn-primary" onclick="saveRegistryUrl()">
+                <span>💾</span> Save Registry URL
+            </button>
+        </div>
+
+        <!-- Security Tab -->
+        <div class="panel" id="securityPanel">
+            <div class="panel-header">
+                <h2 class="panel-title">🔒 Security Settings</h2>
+            </div>
+            
+            <h3 style="margin-bottom: 16px; color: #0db7ed;">Change Password</h3>
+            <form id="changePasswordForm">
+                <div class="form-group">
+                    <label>Current Password</label>
+                    <input type="password" id="currentPassword" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>New Password</label>
+                        <input type="password" id="newPassword" required minlength="8">
+                    </div>
+                    <div class="form-group">
+                        <label>Confirm New Password</label>
+                        <input type="password" id="confirmPassword" required minlength="8">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <span>🔑</span> Change Password
+                </button>
+            </form>
+
+            <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 32px 0;">
+
+            <h3 style="margin-bottom: 16px; color: #0db7ed;">Two-Factor Authentication</h3>
+            <p style="color: #888; margin-bottom: 16px;">2FA Status: <span class="status-badge enabled" id="2faStatus">Enabled</span></p>
+            <button class="btn btn-secondary" onclick="regenerateBackupCodes()">
+                <span>🔄</span> Regenerate Backup Codes
+            </button>
+        </div>
+
+        <!-- Users Tab (Admin Only) -->
+        <div class="panel" id="usersPanel">
+            <div class="panel-header">
+                <h2 class="panel-title">👥 User Management</h2>
+                <button class="btn btn-success" onclick="showAddUserModal()">
+                    <span>➕</span> Add User
+                </button>
+            </div>
+            
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Role</th>
+                        <th>2FA Status</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                    <tr>
+                        <td colspan="5" class="empty-state">
+                            <div class="icon">⏳</div>
+                            <p>Loading users...</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Add User Modal -->
+    <div class="modal" id="addUserModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">➕ Add New User</h3>
+                <button class="modal-close" onclick="closeModal('addUserModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addUserForm">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="newUsername" required minlength="3" placeholder="Enter username">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="newUserPassword" required minlength="8" placeholder="Minimum 8 characters">
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="newUserAdmin">
+                            <label for="newUserAdmin">Grant admin privileges</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('addUserModal')">Cancel</button>
+                <button class="btn btn-success" onclick="createUser()">Create User</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Created Modal -->
+    <div class="modal" id="userCreatedModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">✅ User Created Successfully</h3>
+                <button class="modal-close" onclick="closeModal('userCreatedModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>The new user has been created. Share these credentials securely with the user:</p>
+                <div class="credentials-box">
+                    <h4>🔐 Login Credentials</h4>
+                    <div class="credentials-item">
+                        <span class="credentials-label">Username:</span>
+                        <span class="credentials-value" id="createdUsername"></span>
+                    </div>
+                    <div class="credentials-item">
+                        <span class="credentials-label">TOTP Secret:</span>
+                        <span class="credentials-value" id="createdTotpSecret"></span>
+                    </div>
+                </div>
+                <div class="credentials-box">
+                    <h4>🔑 Backup Codes</h4>
+                    <div class="backup-codes" id="createdBackupCodes"></div>
+                </div>
+                <div class="warning-text">
+                    ⚠️ These credentials will only be shown once. Make sure to save them securely!
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="closeModal('userCreatedModal')">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reset 2FA Modal -->
+    <div class="modal" id="reset2faModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">🔄 2FA Reset Successfully</h3>
+                <button class="modal-close" onclick="closeModal('reset2faModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>2FA has been reset for the user. Share these new credentials:</p>
+                <div class="credentials-box">
+                    <h4>🔐 New 2FA Credentials</h4>
+                    <div class="credentials-item">
+                        <span class="credentials-label">TOTP Secret:</span>
+                        <span class="credentials-value" id="resetTotpSecret"></span>
+                    </div>
+                </div>
+                <div class="credentials-box">
+                    <h4>🔑 New Backup Codes</h4>
+                    <div class="backup-codes" id="resetBackupCodes"></div>
+                </div>
+                <div class="warning-text">
+                    ⚠️ The user will need to set up 2FA again on their next login.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="closeModal('reset2faModal')">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backup Codes Modal -->
+    <div class="modal" id="backupCodesModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">🔑 New Backup Codes</h3>
+                <button class="modal-close" onclick="closeModal('backupCodesModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Your new backup codes have been generated. Save them securely:</p>
+                <div class="credentials-box">
+                    <div class="backup-codes" id="newBackupCodes"></div>
+                </div>
+                <div class="warning-text">
+                    ⚠️ Your old backup codes are no longer valid. Save these new codes securely!
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="closeModal('backupCodesModal')">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal" id="deleteModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">⚠️ Confirm Delete</h3>
+                <button class="modal-close" onclick="closeModal('deleteModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete user <strong id="deleteUsername"></strong>?</p>
+                <p style="color: #e74c3c; margin-top: 12px;">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('deleteModal')">Cancel</button>
+                <button class="btn btn-danger" onclick="confirmDeleteUser()">Delete User</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        let authToken = '';
+        let currentUserData = null;
+        let userToDelete = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+        });
+
+        async function checkAuth() {
+            authToken = localStorage.getItem('auth_token');
+            if (!authToken) {
+                window.location.href = '/login';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/me', {
+                    headers: getAuthHeaders()
+                });
+
+                if (!response.ok) {
+                    throw new Error('Auth failed');
+                }
+
+                currentUserData = await response.json();
+                document.getElementById('currentUser').textContent = currentUserData.username;
+                document.getElementById('profileUsername').value = currentUserData.username;
+                document.getElementById('profileRole').value = currentUserData.is_admin ? 'Administrator' : 'User';
+                document.getElementById('profileCreated').value = formatDate(currentUserData.created_at);
+                document.getElementById('profileLastLogin').value = formatDate(currentUserData.last_login) || 'Never';
+                document.getElementById('2faStatus').textContent = currentUserData.is_2fa_enabled ? 'Enabled' : 'Pending Setup';
+                document.getElementById('2faStatus').className = 'status-badge ' + (currentUserData.is_2fa_enabled ? 'enabled' : 'disabled');
+
+                // Show admin badge and users tab if admin
+                if (currentUserData.is_admin) {
+                    document.getElementById('userBadge').classList.add('admin-badge');
+                    document.getElementById('usersTab').style.display = 'block';
+                }
+
+                // Load registry URL from localStorage
+                const savedRegistry = localStorage.getItem('registry_url') || 'http://localhost:5000';
+                document.getElementById('registryUrl').value = savedRegistry;
+            } catch (error) {
+                localStorage.removeItem('auth_token');
+                window.location.href = '/login';
+            }
+        }
+
+        function saveRegistryUrl() {
+            const url = document.getElementById('registryUrl').value.trim();
+            if (!url) {
+                showToast('Please enter a registry URL', 'error');
+                return;
+            }
+            localStorage.setItem('registry_url', url);
+            showToast('Registry URL saved successfully!');
+        }
+
+        function getAuthHeaders() {
+            return {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            };
+        }
+
+        function showTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update panels
+            document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
+            document.getElementById(tabName + 'Panel').classList.add('active');
+
+            // Load users if switching to users tab
+            if (tabName === 'users' && currentUserData?.is_admin) {
+                loadUsers();
+            }
+        }
+
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/admin/users', {
+                    headers: getAuthHeaders()
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load users');
+                }
+
+                const data = await response.json();
+                renderUsers(data.users);
+            } catch (error) {
+                showToast('Failed to load users: ' + error.message, 'error');
+            }
+        }
+
+        function renderUsers(users) {
+            const tbody = document.getElementById('usersTableBody');
+            
+            if (!users || users.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="empty-state">
+                            <div class="icon">👥</div>
+                            <p>No users found</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = users.map(user => `
+                <tr>
+                    <td><strong>${escapeHtml(user.username)}</strong></td>
+                    <td>
+                        <span class="status-badge ${user.is_admin ? 'admin' : 'user'}">
+                            ${user.is_admin ? '👑 Admin' : '👤 User'}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="status-badge ${user.is_2fa_enabled ? 'enabled' : 'disabled'}">
+                            ${user.is_2fa_enabled ? '✅ Enabled' : '⏳ Pending'}
+                        </span>
+                    </td>
+                    <td>${formatDate(user.created_at)}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-secondary btn-sm" onclick="resetUser2FA('${escapeHtml(user.username)}')" title="Reset 2FA">
+                                🔄
+                            </button>
+                            ${user.username !== 'admin' ? `
+                                <button class="btn btn-danger btn-sm" onclick="showDeleteModal('${escapeHtml(user.username)}')" title="Delete User">
+                                    🗑️
+                                </button>
+                            ` : ''}
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Change Password
+        document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (newPassword !== confirmPassword) {
+                showToast('New passwords do not match', 'error');
+                return;
+            }
+
+            if (newPassword.length < 8) {
+                showToast('Password must be at least 8 characters', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/change-password', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        current_password: currentPassword,
+                        new_password: newPassword
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showToast('Password changed successfully!');
+                    document.getElementById('changePasswordForm').reset();
+                } else {
+                    showToast(data.error || 'Failed to change password', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to change password: ' + error.message, 'error');
+            }
+        });
+
+        // Regenerate Backup Codes
+        async function regenerateBackupCodes() {
+            try {
+                const response = await fetch('/api/auth/regenerate-backup-codes', {
+                    method: 'POST',
+                    headers: getAuthHeaders()
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    const codesContainer = document.getElementById('newBackupCodes');
+                    codesContainer.innerHTML = data.backup_codes.map(code => 
+                        `<div class="backup-code">${code}</div>`
+                    ).join('');
+                    showModal('backupCodesModal');
+                } else {
+                    showToast(data.error || 'Failed to regenerate codes', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to regenerate codes: ' + error.message, 'error');
+            }
+        }
+
+        // Add User
+        function showAddUserModal() {
+            document.getElementById('addUserForm').reset();
+            showModal('addUserModal');
+        }
+
+        async function createUser() {
+            const username = document.getElementById('newUsername').value.trim();
+            const password = document.getElementById('newUserPassword').value;
+            const isAdmin = document.getElementById('newUserAdmin').checked;
+
+            if (!username || !password) {
+                showToast('Please fill in all fields', 'error');
+                return;
+            }
+
+            if (username.length < 3) {
+                showToast('Username must be at least 3 characters', 'error');
+                return;
+            }
+
+            if (password.length < 8) {
+                showToast('Password must be at least 8 characters', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/users', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        username: username,
+                        password: password,
+                        is_admin: isAdmin
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    closeModal('addUserModal');
+                    
+                    // Show credentials
+                    document.getElementById('createdUsername').textContent = data.user.username;
+                    document.getElementById('createdTotpSecret').textContent = data.user.totp_secret;
+                    document.getElementById('createdBackupCodes').innerHTML = data.user.backup_codes.map(code => 
+                        `<div class="backup-code">${code}</div>`
+                    ).join('');
+                    
+                    showModal('userCreatedModal');
+                    loadUsers();
+                } else {
+                    showToast(data.error || 'Failed to create user', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to create user: ' + error.message, 'error');
+            }
+        }
+
+        // Reset 2FA
+        async function resetUser2FA(username) {
+            if (!confirm(`Reset 2FA for user "${username}"? They will need to set up 2FA again.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/users/${encodeURIComponent(username)}/reset-2fa`, {
+                    method: 'POST',
+                    headers: getAuthHeaders()
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('resetTotpSecret').textContent = data.totp_secret;
+                    document.getElementById('resetBackupCodes').innerHTML = data.backup_codes.map(code => 
+                        `<div class="backup-code">${code}</div>`
+                    ).join('');
+                    
+                    showModal('reset2faModal');
+                    loadUsers();
+                } else {
+                    showToast(data.error || 'Failed to reset 2FA', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to reset 2FA: ' + error.message, 'error');
+            }
+        }
+
+        // Delete User
+        function showDeleteModal(username) {
+            userToDelete = username;
+            document.getElementById('deleteUsername').textContent = username;
+            showModal('deleteModal');
+        }
+
+        async function confirmDeleteUser() {
+            if (!userToDelete) return;
+
+            try {
+                const response = await fetch(`/api/admin/users/${encodeURIComponent(userToDelete)}`, {
+                    method: 'DELETE',
+                    headers: getAuthHeaders()
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    closeModal('deleteModal');
+                    showToast('User deleted successfully');
+                    loadUsers();
+                } else {
+                    showToast(data.error || 'Failed to delete user', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to delete user: ' + error.message, 'error');
+            }
+
+            userToDelete = null;
+        }
+
+        // Modal helpers
+        function showModal(modalId) {
+            document.getElementById(modalId).classList.add('show');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+        }
+
+        // Utility functions
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return 'N/A';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

@@ -37,7 +37,6 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
         }
 
         .header-content {
@@ -86,30 +85,6 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-        }
-
-        .registry-input {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .registry-input input {
-            flex: 1;
-            min-width: 300px;
-            padding: 12px 16px;
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            background: rgba(0, 0, 0, 0.3);
-            color: #fff;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-
-        .registry-input input:focus {
-            outline: none;
-            border-color: #0db7ed;
-            box-shadow: 0 0 20px rgba(13, 183, 237, 0.2);
         }
 
         .btn {
@@ -553,24 +528,27 @@
                     <h1>Docker Registry GUI</h1>
                 </div>
                 <div class="user-info">
-                    <div class="user-badge">
+                    <div class="user-badge" id="userBadge">
                         <span class="icon">🔐</span>
                         <span id="currentUser">Loading...</span>
                     </div>
+                    <a href="/settings" class="btn btn-sm btn-secondary" style="text-decoration: none;">
+                        <span>⚙️</span> Settings
+                    </a>
                     <button class="btn btn-sm btn-logout" onclick="logout()">
                         <span>🚪</span> Logout
                     </button>
                 </div>
             </div>
-            <div class="registry-input">
-                <input type="text" id="registryUrl" placeholder="Enter registry URL (e.g., http://localhost:5000)" value="http://localhost:5000">
-                <button class="btn btn-primary" onclick="connectRegistry()">
-                    <span>🔗</span> Connect
-                </button>
-            </div>
             <div class="status-bar">
                 <div class="status-indicator disconnected" id="statusIndicator"></div>
                 <span id="statusText">Not connected</span>
+                <span style="margin-left: auto; color: #888; font-size: 13px;">
+                    Registry: <span id="registryDisplay" style="color: #0db7ed;">-</span>
+                </span>
+                <button class="btn btn-sm btn-secondary" onclick="refreshRegistry()" style="margin-left: 12px;">
+                    <span>🔄</span> Refresh
+                </button>
             </div>
         </header>
 
@@ -657,6 +635,9 @@
                 }
 
                 document.getElementById('currentUser').textContent = data.username;
+                
+                // Auto-connect to registry
+                connectRegistry();
             } catch (error) {
                 localStorage.removeItem('auth_token');
                 window.location.href = '/login';
@@ -695,14 +676,19 @@
             statusText.textContent = text;
         }
 
+        function refreshRegistry() {
+            connectRegistry();
+        }
+
         async function connectRegistry() {
-            const url = document.getElementById('registryUrl').value.trim();
+            const url = localStorage.getItem('registry_url') || 'http://localhost:5000';
             if (!url) {
-                showToast('Please enter a registry URL', 'error');
+                showToast('Please set a registry URL in Settings', 'error');
                 return;
             }
 
             currentRegistry = url;
+            document.getElementById('registryDisplay').textContent = url;
             setStatus('loading', 'Connecting...');
 
             try {
@@ -963,10 +949,6 @@
             }
         }
 
-        // Handle Enter key in registry URL input
-        document.getElementById('registryUrl').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') connectRegistry();
-        });
     </script>
 </body>
 </html>

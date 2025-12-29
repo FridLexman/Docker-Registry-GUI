@@ -6,9 +6,10 @@ from datetime import datetime, timezone
 
 from auth import (
     load_users, save_users, verify_password, verify_totp,
-    create_jwt_token, decode_jwt_token, require_auth,
+    create_jwt_token, decode_jwt_token, require_auth, require_admin,
     create_user, get_totp_uri, generate_qr_code,
-    hash_password, setup_initial_admin
+    hash_password, setup_initial_admin, change_password,
+    delete_user, list_users, is_admin, reset_user_2fa
 )
 
 app = Flask(__name__, static_folder='static')
@@ -26,6 +27,10 @@ def index():
 @app.route('/login')
 def login_page():
     return send_from_directory('static', 'login.html')
+
+@app.route('/settings')
+def settings_page():
+    return send_from_directory('static', 'settings.html')
 
 # ============== Authentication Routes ==============
 
@@ -224,6 +229,84 @@ def regenerate_backup_codes():
         'success': True,
         'backup_codes': new_codes,
         'message': 'New backup codes generated. Save them securely!'
+    })
+
+@app.route('/api/auth/me', methods=['GET'])
+@require_auth
+def get_current_user():
+    """Get current user info"""
+    users = load_users()
+    user = users.get(request.current_user)
+    
+    return jsonify({
+        'username': request.current_user,
+        'is_admin': user.get('is_admin', request.current_user == 'admin'),
+        'is_2fa_enabled': user.get('is_2fa_enabled', False),
+        'created_at': user.get('created_at'),
+        'last_login': user.get('last_login')
+    })
+
+# ============== Admin User Management Routes ==============
+
+@app.route('/api/admin/users', methods=['GET'])
+@require_admin
+def admin_list_users():
+    """List all users (admin only)"""
+    return jsonify({'users': list_users()})
+
+@app.route('/api/admin/users', methods=['POST'])
+@require_admin
+def admin_create_user():
+    """Create a new user (admin only)"""
+    data = request.get_json()
+    username = data.get('username', '').strip()
+    password = data.get('password', '')
+    make_admin = data.get('is_admin', False)
+    
+    if not username or not password:
+        return jsonify({'error': 'Username and password required'}), 400
+    
+    result, error = create_user(username, password, is_admin=make_admin)
+    
+    if error:
+        return jsonify({'error': error}), 400
+    
+    return jsonify({
+        'success': True,
+        'message': f'User {username} created successfully',
+        'user': {
+            'username': result['username'],
+            'totp_secret': result['totp_secret'],
+            'backup_codes': result['backup_codes'],
+            'is_admin': result['is_admin']
+        }
+    })
+
+@app.route('/api/admin/users/<username>', methods=['DELETE'])
+@require_admin
+def admin_delete_user(username):
+    """Delete a user (admin only)"""
+    success, message = delete_user(username)
+    
+    if not success:
+        return jsonify({'error': message}), 400
+    
+    return jsonify({'success': True, 'message': message})
+
+@app.route('/api/admin/users/<username>/reset-2fa', methods=['POST'])
+@require_admin
+def admin_reset_user_2fa(username):
+    """Reset 2FA for a user (admin only)"""
+    result, message = reset_user_2fa(username)
+    
+    if not result:
+        return jsonify({'error': message}), 400
+    
+    return jsonify({
+        'success': True,
+        'message': message,
+        'totp_secret': result['totp_secret'],
+        'backup_codes': result['backup_codes']
     })
 
 # ============== Protected Registry Routes ==============
