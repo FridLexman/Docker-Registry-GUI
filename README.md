@@ -35,37 +35,67 @@ A modern, secure web-based GUI for managing Docker registries with built-in two-
 
 ## Quick Start
 
-### Prerequisites
-- Python 3.8+
-- Docker (for running a local registry)
+### Local dev (Python)
+```bash
+git clone https://github.com/FridLexman/Docker-Registry-GUI.git
+cd Docker-Registry-GUI
+pip install -r requirements.txt
+export REGISTRY_URL=http://localhost:5000
+export JWT_SECRET=$(openssl rand -hex 32)
+export ADMIN_PASSWORD='choose-a-strong-password'
+python app.py
+```
+Open `http://localhost:12000`. On first run, an admin user is created with the password you set in `ADMIN_PASSWORD`.
 
-### Installation
+### Docker
+```bash
+docker build -t docker-registry-gui:latest .
+docker run -d \
+  -p 12000:12000 \
+  -e REGISTRY_URL=http://your-registry:5000 \
+  -e JWT_SECRET=$(openssl rand -hex 32) \
+  -e ADMIN_PASSWORD='choose-a-strong-password' \
+  -v $(pwd)/data/users.json:/app/users.json \
+  --name registry-gui \
+  docker-registry-gui:latest
+```
+- `users.json` is created on first run; mount it to persist accounts/2FA.
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd docker-registry-gui
-   ```
-
-2. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Start the application**
-   ```bash
-   python app.py
-   ```
-
-4. **Access the GUI**
-   Open your browser and navigate to `http://localhost:12000`
-
-### Default Credentials
-On first run, an admin account is automatically created:
-- **Username:** `admin`
-- **Password:** `admin123`
-
-⚠️ **Important:** Change the default password immediately after first login!
+### Kubernetes (example)
+Create a Secret with your credentials:
+```bash
+kubectl create secret generic registry-gui-secrets -n registry \
+  --from-literal=jwtSecret=$(openssl rand -hex 32) \
+  --from-literal=adminPassword='choose-a-strong-password'
+```
+Deployment snippet:
+```yaml
+containers:
+- name: registry-gui
+  image: 192.168.1.60:5000/docker-registry-gui:v6
+  env:
+  - name: REGISTRY_URL
+    value: http://docker-registry.registry.svc.cluster.local:5000
+  - name: JWT_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: registry-gui-secrets
+        key: jwtSecret
+  - name: ADMIN_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: registry-gui-secrets
+        key: adminPassword
+  volumeMounts:
+  - name: users
+    mountPath: /app/users.json
+    subPath: users.json
+volumes:
+- name: users
+  persistentVolumeClaim:
+    claimName: registry-gui-users
+```
+Pair this with a Service/Ingress (see `cluster-export/registry-gui.yaml`). Use `/` for readiness/liveness; `/api/health` requires auth.
 
 ## Configuration
 
@@ -78,21 +108,6 @@ On first run, an admin account is automatically created:
 | `JWT_EXPIRY_HOURS` | Token expiration time | `24` |
 | `ADMIN_PASSWORD` | Initial admin password | `admin123` |
 | `USERS_FILE` | Path to users database | `users.json` |
-
-### Setting Up a Local Docker Registry
-
-```bash
-# Start Docker daemon (if not running)
-sudo dockerd &
-
-# Run a local registry
-docker run -d -p 5000:5000 --name registry registry:2
-
-# Push a test image
-docker pull alpine
-docker tag alpine localhost:5000/alpine
-docker push localhost:5000/alpine
-```
 
 ## Usage
 
@@ -152,7 +167,6 @@ docker-registry-gui/
 ├── app.py              # Flask application
 ├── auth.py             # Authentication module
 ├── requirements.txt    # Python dependencies
-├── users.json          # User database (auto-created)
 ├── static/
 │   ├── index.html      # Main registry browser
 │   ├── login.html      # Login page with 2FA
